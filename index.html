@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #050505;
+            --accent-color: #00f3ff; /* Cyan Neon */
+            --text-color: #e0e0e0;
+            --glow: 0 0 10px var(--accent-color), 0 0 20px var(--accent-color);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Background Grid Effect */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(transparent 95%, rgba(0, 243, 255, 0.1) 50%),
+                linear-gradient(90deg, transparent 95%, rgba(0, 243, 255, 0.1) 50%);
+            background-size: 50px 50px;
+            z-index: -1;
+        }
+
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            padding: 40px;
+            background: rgba(18, 18, 18, 0.8);
+            border: 1px solid #333;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
+            letter-spacing: 2px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            background: #0a0a0a;
+            border: 2px solid #333;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1.2rem;
+            padding: 15px;
+            outline: none;
+            resize: none;
+            transition: 0.3s;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        .btn {
+            margin-top: 30px;
+            padding: 15px 50px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--bg-color);
+            background: var(--accent-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: var(--glow);
+            background: #fff;
+        }
+
+        /* MODAL STYLES */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95); /* Darker overlay for focus */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--accent-color);
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.25); /* Stronger glow */
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+            
+            /* Allow modal to grow but keep it safe on screens */
+            width: auto;
+            max-width: 95%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+
+        #qrcode {
+            margin: 10px auto; /* Reduced margin since no header text */
+            padding: 20px;
+            background: white; 
+            border-radius: 10px;
+            
+            /* Ensure the generated canvas/img scales on mobile */
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Force the library image to be responsive */
+        #qrcode img {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 30px;
+            width: 100%;
+        }
+
+        .btn-download {
+            background: transparent;
+            border: 2px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 12px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            flex: 1; /* Make buttons even width */
+        }
+
+        .btn-download:hover {
+            background: var(--accent-color);
+            color: black;
+            box-shadow: var(--glow);
+        }
+
+        .btn-close {
+            background: #333;
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.3s;
+            flex: 1;
+        }
+
+        .btn-close:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>QR GENERATOR</h1>
+        <textarea id="text-input" placeholder="Enter your text..."></textarea>
+        <br>
+        <button class="btn" id="convert-btn">CONVERT</button>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <div id="qrcode"></div>
+            <div class="modal-actions">
+                <button class="btn-download" id="download-btn">DOWNLOAD</button>
+                <button class="btn-close" id="close-btn">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        const convertBtn = document.getElementById('convert-btn');
+        const textInput = document.getElementById('text-input');
+        const modal = document.getElementById('modal');
+        const closeBtn = document.getElementById('close-btn');
+        const qrContainer = document.getElementById('qrcode');
+        const downloadBtn = document.getElementById('download-btn');
+
+        let qrCodeObj = null;
+
+        convertBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+
+            if (!text) {
+                textInput.style.borderColor = 'red';
+                setTimeout(() => textInput.style.borderColor = '#333', 500);
+                return;
+            }
+
+            // Clear previous QR code
+            qrContainer.innerHTML = "";
+
+            // Generate new QR Code (DOUBLED SIZE)
+            // Changed width/height from 200 to 400
+            qrCodeObj = new QRCode(qrContainer, {
+                text: text,
+                width: 400, 
+                height: 400,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            // Show Modal
+            modal.classList.add('active');
+        });
+
+        closeBtn.addEventListener('click', closeModal);
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        downloadBtn.addEventListener('click', () => {
+            const img = qrContainer.querySelector('img');
+            if (img) {
+                const imgUrl = img.src;
+                const link = document.createElement('a');
+                link.href = imgUrl;
+                link.download = 'generatedQR.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        });
+    </script>
+</body>
+</html>
